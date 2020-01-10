@@ -1,0 +1,142 @@
+import time
+import re
+import tkinter
+import tkinter.messagebox
+import requests
+import webbrowser
+def buttonClik(btn):
+    content=contentVar.get()
+    if content.startswith('.'):
+        content='0'+content
+    if btn in '0123456789':
+        content+=btn
+    elif btn=='.':
+        lastPart=re.split(r'\+|-|\*|/',content)[-1]
+        if '.'in lastPart:
+            tkinter.messagebox.showerror('错误','重复出现的小数点')
+            return
+        else:
+            content+=btn
+    elif btn=="set":
+        setroot=tkinter.Tk()
+        setroot.geometry('300x500')
+        setroot.resizable(False,False)
+        setButton=('启用键盘回车运算和其他快捷键','允许键盘直接写入','计算圆周率','/','重置所有项目至默认值','检查更新')
+        index1=0
+        for index1,setButton in enumerate(setButton):
+            setButtonr=tkinter.Button(setroot,text=setButton,bg = 'orange',command=lambda x=setButton:setClik(x))
+            setButtonr.place(x=20,y=30+index1*40,width=200,height=35)
+    elif btn=='C':
+        content=''
+    elif btn=='=':
+        try:
+            content=str(eval(content))
+        except:
+            tkinter.messagebox.showerror('错误','表达式有误')
+            return
+    elif btn in operators:
+        if content.endswith(operators):
+            tkinter.messagebox.showerror('错误','不允许存在连续运算符')
+            return
+        content+=btn
+    elif btn=='²√':
+        n=content.split('.')
+        if all(map(lambda x:x.isdigit(),n)):
+            content=eval(content)**0.5
+        else:
+            tkinter.messagebox.showerror('错误','表达式错误')
+            return
+    contentVar.set(content)
+def setClik(setname):
+    setButton=('启用键盘回车运算和其他快捷键','允许键盘直接写入','计算圆周率','','重置所有项目至默认值','检查更新')
+    if setname in setButton:
+        if setname=="启用键盘回车运算和其他快捷键":
+            def keyboard(event):
+                buttonClik("=")
+            root.bind('<Return>', keyboard)
+            tkinter.messagebox.showinfo('更改','ReturnAbout状态已被更新为True')
+        elif setname=="允许键盘直接写入":
+            contentEntry['state']="normal"
+            tkinter.messagebox.showinfo('更改','写入文本框状态已被更新为normal')
+        elif setname=="计算圆周率":
+            number=contentVar.get()
+            try:
+                number=int(number)
+                if number>200:
+                    tkinter.messagebox.showerror('警告','数额过大，请确认电脑性能，如需调整数额，请勿点击确定，直接关闭设置界面！')
+                if number>1000:
+                    tkinter.messagebox.showerror('错误','数额过大，无法计算')
+                number+=10
+                b = 10**number
+                x1 = b*4//5
+                x2 = b// -239
+                he = x1+x2
+                number *= 2
+            except:
+                tkinter.messagebox.showerror('错误','当前计算框内并非正整数')
+            else:
+                for i in range(3,number,2):
+                    x1 //= -25
+                    x2 //= -57121
+                    x = (x1+x2) // i
+                    he += x
+                pai = he*4
+                pai //= 10**10
+                paistring=str(pai)
+                result=paistring[0]+str('.')+paistring[1:len(paistring)]
+                pairesult=tkinter.Tk()
+                pairesult.geometry('1300x70')
+                pairesult.resizable(False,False)
+                l = tkinter.Label(pairesult, text=result, bg='white', font=('Arial', 12), width=800, height=2)
+                l.pack()
+        elif setname=="重置所有项目至默认值":
+            contentEntry['state']="readonly"
+            tkinter.messagebox.showinfo('重置','所有项目已被重置为默认值（除ReturnAbout）')
+        elif setname=="检查更新":
+            tkinter.messagebox.askquestion('更新','确定要联网检查Github更新吗？')
+            api_url = "https://api.github.com/repos/123ABCDF11345/PythonGUI-Calculator"
+            github_url = "https://github.com/123ABCDF11345/PythonGUI-Calculator/archive/master.zip"
+            all_info = requests.get(api_url).json()
+            old_time = "2020-01-04T11:32:28Z"
+            new_time = all_info["updated_at"]
+            if new_time > old_time:
+                tkinter.messagebox.showinfo('更新','检测到新版本，单击确定启动下载进程，请手动解压下载的zip压缩包（如果压缩包解压后的版本仍然检测到新版本，请稍等，Github目录正在更新）')
+                webbrowser.open(github_url)
+            else:
+                tkinter.messagebox.showinfo('更新','当前程序已是最新版本，感谢您的支持')
+ReturnAbout=False
+timeopen=time.time()
+"""界面基本"""
+root=tkinter.Tk()
+root.geometry('320x320')
+root.resizable(False,False)
+root.title('计算器                ')
+contentVar=tkinter.StringVar(root,'')
+contentEntry=tkinter.Entry(root,textvariable=contentVar)
+contentEntry['state']="readonly"
+contentEntry.place(x=10,y=10,width=280,height=20)
+"""设置选项放置"""
+btnopenset=tkinter.Button(root,text="≡",bg="red",command=lambda:buttonClik("set"))
+btnopenset.place(x=290,y=3,width=28,height=28)
+"""清除和等于放置"""
+btnClear=tkinter.Button(root,text='C',bg = 'red',command=lambda:buttonClik('C'))
+btnClear.place(x=40,y=40,width=80,height=20)
+btnCompute=tkinter.Button(root,text='=',bg = 'yellow',command=lambda :buttonClik('='))
+btnCompute.place(x=170,y=40,width=80,height=20)
+"""数字和平方根放置"""
+digits=list('0123456789.')+['²√']
+index=0
+for row in range(4):
+    for col in range(3):
+        d=digits[index]
+        index+=1
+        btnDigit=tkinter.Button(root,text=d,command=lambda x=d:buttonClik(x))
+        btnDigit.place(x=20+col*70,y=80+row*50,width=50,height=20)
+"""计算符号放置"""
+operators=('+','-','*','/','**','//')
+for index,operator in enumerate(operators):
+    btnOperator=tkinter.Button(root,text=operator,bg = 'orange',command=lambda x=operator:buttonClik(x))
+    btnOperator.place(x=230,y=80+index*30,width=50,height=20)
+timeend=time.time()
+print(timeend-timeopen)
+root.mainloop()
